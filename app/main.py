@@ -48,3 +48,12 @@ async def process(background_tasks: BackgroundTasks):
 async def chunk(background_tasks: BackgroundTasks):
     background_tasks.add_task(RAG_SERVICE.chunk_sources)
     return {'Chunking commenced...'}
+
+@app.get('/ask')
+async def ask():
+    try:
+        response = await RAG_SERVICE.answer_question('Tell me something about recent models.')
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
+    return response

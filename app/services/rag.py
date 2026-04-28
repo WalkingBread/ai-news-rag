@@ -10,30 +10,34 @@ from app.settings import (
     VECTOR_DIMENSIONS
 )
 
-from langchain_openai import OpenAIEmbeddings, ChatOpenAI
+from langchain_openai import AzureOpenAIEmbeddings, AzureChatOpenAI
 from langchain_community.vectorstores import OpenSearchVectorSearch, PGVector
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from sqlalchemy import select
 
-EMBEDDING_MODEL = "text-embedding-3-large"
+EMBEDDING_MODEL = "text-embedding-3-small"
+
+API_VERSION = '2024-10-21'
 
 class RAGService:
     def __init__(self, model: str = EMBEDDING_MODEL):   
         self.model = model     
 
-        self.embeddings = OpenAIEmbeddings(
+        self.embeddings = AzureOpenAIEmbeddings(
             model=self.model,
             openai_api_key=OPEN_AI_API_KEY,
-            openai_proxy=OPEN_AI_API_URL,
-            dimensions=VECTOR_DIMENSIONS
+            azure_endpoint=f'{OPEN_AI_API_URL}/{self.model}',
+            dimensions=VECTOR_DIMENSIONS,
+            api_version=API_VERSION
         )
 
-        self.llm = ChatOpenAI(
+        self.llm = AzureChatOpenAI(
             model="gpt-4o", 
             openai_api_key=OPEN_AI_API_KEY, 
-            openai_proxy=OPEN_AI_API_URL
+            azure_endpoint=OPEN_AI_API_URL,
+            api_version=API_VERSION
         )
 
         self.pg_store = PGVector(
@@ -62,11 +66,7 @@ class RAGService:
             return
 
         for source in sources:
-            print('chunking source')
-            try:
-                await self._chunk_source(source)
-            except Exception as e:
-                print(str(e))
+            await self._chunk_source(source)
 
 
     async def _chunk_source(self, source: ProcessedSource):
@@ -82,10 +82,8 @@ class RAGService:
             ) for t in texts
         ]
 
-        print('a')
         await self.pg_store.aadd_documents(docs)
 
-        print('b')
         await self.os_store.aadd_texts(
             texts=[source.body],
             metadatas=[{

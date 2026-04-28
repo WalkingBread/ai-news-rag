@@ -10,7 +10,7 @@ from app.database.config import (
     get_alembic_config
 )
 
-engine = create_engine(
+ENGINE = create_engine(
     RAG_DB_URL,
     echo=False,
     pool_size=10,  
@@ -20,7 +20,7 @@ engine = create_engine(
 SessionLocal = sessionmaker(
     autocommit=False, 
     autoflush=False, 
-    bind=engine,
+    bind=ENGINE,
     expire_on_commit=False
 )
 
