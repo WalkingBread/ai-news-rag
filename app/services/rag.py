@@ -6,8 +6,13 @@ from app.settings import (
     OPEN_AI_API_URL, 
     OPENSEARCH_URL, 
     OPENSEARCH_INDEX, 
-    OPENSEARCH_INDEX_BODY, 
-    VECTOR_DIMENSIONS
+    OPENSEARCH_INDEX_BODY,
+    OS_HYBRID_SEARCH_PIPELINE, 
+    OS_HYBRID_SEARCH_PIPELINE_BODY,
+    VECTOR_DIMENSIONS,
+    EMBEDDING_MODEL,
+    LANGUAGE_MODEL,
+    AZURE_API_VERSION
 )
 
 from langchain_openai import AzureOpenAIEmbeddings, AzureChatOpenAI
@@ -17,28 +22,25 @@ from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from sqlalchemy import select
 
-EMBEDDING_MODEL = "text-embedding-3-small"
-
-API_VERSION = '2024-10-21'
-
 class RAGService:
-    def __init__(self, model: str = EMBEDDING_MODEL):   
-        self.embed_model = model
-        self.lang_model = 'gpt-4o'     
+    def __init__(self, embedding_model: str = EMBEDDING_MODEL, 
+                 language_model: str = LANGUAGE_MODEL):   
+        self.embed_model = embedding_model
+        self.lang_model = language_model    
 
         self.embeddings = AzureOpenAIEmbeddings(
             model=self.embed_model,
             openai_api_key=OPEN_AI_API_KEY,
             azure_endpoint=f'{OPEN_AI_API_URL}/{self.embed_model}',
             dimensions=VECTOR_DIMENSIONS,
-            api_version=API_VERSION
+            api_version=AZURE_API_VERSION
         )
 
         self.llm = AzureChatOpenAI(
             model=self.lang_model, 
             openai_api_key=OPEN_AI_API_KEY, 
             azure_endpoint=f'{OPEN_AI_API_URL}/{self.lang_model}',
-            api_version=API_VERSION
+            api_version=AZURE_API_VERSION
         )
 
         self.pg_store = PGVector(
@@ -98,7 +100,7 @@ class RAGService:
     async def answer_question(self, question: str) -> str:
         scout_results = await self.os_store.asimilarity_search(
             question, 
-            k=2,
+            k=2
         )
         
         if not scout_results:
@@ -125,10 +127,16 @@ class RAGService:
     
 
     async def setup_opensearch_index(self):
+        self.os_store.client.search_pipeline.put(
+            id=OS_HYBRID_SEARCH_PIPELINE, 
+            body=OS_HYBRID_SEARCH_PIPELINE_BODY
+        )
+
         exists = self.os_store.client.indices.exists(index=OPENSEARCH_INDEX)
         if not exists:
             await self.os_store.client.indices.create(
                 index=OPENSEARCH_INDEX,
                 body=OPENSEARCH_INDEX_BODY
             )
+
         print('Opensearch Index is set up.')
