@@ -7,11 +7,9 @@ from sqlalchemy import select
 from app.database.models import ProcessedSource
 from app.database import setup_db, get_db_session
 from app.services.fetchdata import FetchDataService
-from app.services.rag import RAGService
 from app.services.processdata import ProcessDataService
 from app.services.modelprovider import ModelProviderService
 from app.services.search import VectorStorageService
-from app.services.chunk import ChunkingService
 from app.services.query import QueryService
 
 
@@ -20,11 +18,9 @@ VECTOR_STORAGE_SERVICE = VectorStorageService(MODEL_PROVIDER_SERVICE.embeddings)
 
 FETCH_DATA_SERVICE = FetchDataService()
 PROCESS_DATA_SERVICE = ProcessDataService()
-CHUNKING_SERVICE = ChunkingService(VECTOR_STORAGE_SERVICE)
 
 QUERY_SERVICE = QueryService(MODEL_PROVIDER_SERVICE, VECTOR_STORAGE_SERVICE)
 
-RAG_SERVICE = RAGService()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -58,7 +54,7 @@ async def process(background_tasks: BackgroundTasks):
 
 @app.get('/chunk')
 async def chunk(background_tasks: BackgroundTasks):
-    background_tasks.add_task(CHUNKING_SERVICE.chunk_sources)
+    background_tasks.add_task(VECTOR_STORAGE_SERVICE.process_sources)
     return {'Chunking commenced...'}
 
 @app.get('/ask')

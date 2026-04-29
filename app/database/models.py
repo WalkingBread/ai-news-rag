@@ -1,5 +1,5 @@
 from datetime import datetime
-from sqlalchemy import func, ForeignKey, Index, Text, Column
+from sqlalchemy import func, ForeignKey, Index, Text, Column, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
 from pgvector.sqlalchemy import Vector
 
@@ -33,6 +33,7 @@ class ProcessedSource(Base):
     body: Mapped[Optional[str]] = mapped_column(nullable=True)
     published_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
+    vectorized: Mapped[bool] = mapped_column(server_default=text('false'), default=False)
 
 
 class SourceChunk(Base):
