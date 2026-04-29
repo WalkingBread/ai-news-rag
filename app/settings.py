@@ -24,7 +24,7 @@ OPENSEARCH_INDEX_BODY = {
     },
     "mappings": {
         "properties": {
-            "embedding": {
+            "vector_field": {
                 "type": "knn_vector",
                 "dimension": VECTOR_DIMENSIONS,
                 "method": {

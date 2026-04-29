@@ -23,20 +23,21 @@ API_VERSION = '2024-10-21'
 
 class RAGService:
     def __init__(self, model: str = EMBEDDING_MODEL):   
-        self.model = model     
+        self.embed_model = model
+        self.lang_model = 'gpt-4o'     
 
         self.embeddings = AzureOpenAIEmbeddings(
-            model=self.model,
+            model=self.embed_model,
             openai_api_key=OPEN_AI_API_KEY,
-            azure_endpoint=f'{OPEN_AI_API_URL}/{self.model}',
+            azure_endpoint=f'{OPEN_AI_API_URL}/{self.embed_model}',
             dimensions=VECTOR_DIMENSIONS,
             api_version=API_VERSION
         )
 
         self.llm = AzureChatOpenAI(
-            model="gpt-4o", 
+            model=self.lang_model, 
             openai_api_key=OPEN_AI_API_KEY, 
-            azure_endpoint=OPEN_AI_API_URL,
+            azure_endpoint=f'{OPEN_AI_API_URL}/{self.lang_model}',
             api_version=API_VERSION
         )
 
@@ -51,7 +52,6 @@ class RAGService:
             opensearch_url=OPENSEARCH_URL,
             index_name=OPENSEARCH_INDEX,
             embedding_function=self.embeddings,
-            #http_auth=("admin", "admin"),
             use_ssl=False,
             verify_certs=False
         )
@@ -109,7 +109,7 @@ class RAGService:
         chunks = await self.pg_store.asimilarity_search(
             question,
             k=5,
-            filter={"source_id": {"in": target_ids}}
+            filter={"source_id": {"$in": target_ids}}
         )
 
         context = "\n\n".join([c.page_content for c in chunks])
