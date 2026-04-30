@@ -3,12 +3,16 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 
+from app.logger import get_logger
+
 from app.database.config import (
     RAG_DB_URL,
     SYSTEM_DB_URL,
     DB_NAME,
     get_alembic_config
 )
+
+logger = get_logger()
 
 ENGINE = create_engine(
     RAG_DB_URL,
@@ -35,9 +39,9 @@ def setup_db():
 
     sys_engine.dispose()
     
-    print("Running migrations...")
+    logger.info("Running migrations...")
     command.upgrade(get_alembic_config(), "head")
-    print("Database is up to date.")
+    logger.info("Database is up to date.")
 
 @contextmanager
 def get_db_session():

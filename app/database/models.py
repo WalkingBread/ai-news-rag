@@ -1,11 +1,8 @@
 from datetime import datetime
-from sqlalchemy import func, ForeignKey, Index, Text, Column, text
+from sqlalchemy import func, ForeignKey, text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
-from pgvector.sqlalchemy import Vector
 
 from typing import Optional
-
-from app.settings import VECTOR_DIMENSIONS
 
 class Base(DeclarativeBase):
     pass
@@ -34,22 +31,5 @@ class ProcessedSource(Base):
     published_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     vectorized: Mapped[bool] = mapped_column(server_default=text('false'), default=False)
-
-
-class SourceChunk(Base):
-    __tablename__ = "source_chunk"
-
-    id: Mapped[int] = mapped_column(primary_key=True)
-    source_id: Mapped[int] = mapped_column(ForeignKey("source.id", ondelete="CASCADE"))
-    content: Mapped[str] = mapped_column(Text)
-    embedding: Mapped[Vector] = mapped_column(Vector(VECTOR_DIMENSIONS))
-
-    __table_args__ = (
-        Index(
-            "hnsw_index_chunks",
-            embedding,
-            postgresql_using="hnsw",
-            postgresql_with={"m": 16, "ef_construction": 64},
-            postgresql_ops={"embedding": "vector_cosine_ops"},
-        ),
-    )
+    #authority_score: Mapped[float] = mapped_column(float, default=1.0)
+    #momentum_score: Mapped[float] = mapped_column(float, default=0.0)

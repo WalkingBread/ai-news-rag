@@ -7,9 +7,12 @@ import asyncio
 from abc import abstractmethod
 from app.database.models import RawSource
 from app.database import get_db_session
+from app.logger import get_logger
 
 from datetime import datetime
 from typing import AsyncGenerator
+
+logger = get_logger('fetch_data_service')
 
 RSS_SOURCES = {
     'Hugging Face': 'https://huggingface.co/blog/feed.xml',
@@ -75,8 +78,7 @@ class RSSDataSource(DataSource):
         return None
     
     async def _extract_content_from_url(self, url):
-        return await anyio.to_thread.run_sync(trafilatura.fetch_url, url)
-        #return await anyio.to_thread.run_sync(trafilatura.extract, raw) if raw else None        
+        return await anyio.to_thread.run_sync(trafilatura.fetch_url, url)      
     
 
 class HuggingFaceRSS(RSSDataSource):
@@ -115,6 +117,7 @@ class FetchDataService:
     async def fetch_data(self):
         for data_source in self.data_sources:
             async for source in data_source.fetch_data():
+                logger.info(f'Fetched data from {source.url}')
                 with get_db_session() as db:
                     existing = db.query(RawSource).filter(RawSource.url == source.url).first()
 

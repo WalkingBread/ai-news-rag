@@ -1,5 +1,6 @@
 from app.database.models import ProcessedSource
 from app.database import get_db_session
+from app.logger import get_logger
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -19,6 +20,10 @@ from app.settings import (
 CHUNK_SIZE = 512
 CHUNK_OVERLAP = 50
 
+logger = get_logger('vector_storage')
+
+main_logger = get_logger()
+
 class VectorStorageService:
     def __init__(self, embeddings, chunk_size: int = CHUNK_SIZE, 
                  chunk_overlap: int = CHUNK_OVERLAP):
@@ -37,29 +42,23 @@ class VectorStorageService:
             index_name=OPENSEARCH_INDEX,
             embedding_function=embeddings,
             use_ssl=False,
-            verify_certs=False
+            verify_certs=False,
         )
 
     async def process_sources(self):
-        try:
-            with get_db_session() as db:
-                stmt = select(ProcessedSource).where(ProcessedSource.vectorized == False)
-                sources = db.execute(stmt).scalars().all()
+        with get_db_session() as db:
+            stmt = select(ProcessedSource).where(ProcessedSource.vectorized == False)
+            sources = db.execute(stmt).scalars().all()
 
-                if not sources:
-                    return
+            if not sources:
+                return
 
-                for source in sources:
-                    await self._chunk_source(source)
-                    await self._index_source(source)
-        
-                    source.vectorized = True
-                    db.commit()
-
-
-        except Exception as e:
-            import traceback
-            traceback.print_exc()
+            for source in sources:
+                await self._chunk_source(source)
+                await self._index_source(source)
+    
+                source.vectorized = True
+                db.commit()
 
 
     async def _chunk_source(self, source: ProcessedSource):
@@ -102,5 +101,4 @@ class VectorStorageService:
                 index=OPENSEARCH_INDEX,
                 body=OPENSEARCH_INDEX_BODY
             )
-
-        print('Opensearch Index is set up.')
+        main_logger.info('OpenSearch index is set up.')

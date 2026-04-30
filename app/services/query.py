@@ -25,6 +25,7 @@ class QueryService:
         )
 
         context = "\n\n".join([c.page_content for c in chunks])
+        
         prompt = f"""Use the following context from the AI Radar to answer the question.
         Context:
         {context}

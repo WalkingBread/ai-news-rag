@@ -5,6 +5,8 @@ dist/
 wheels/
 *.egg-info
 
+logs/
+
 .venv
 
 .env

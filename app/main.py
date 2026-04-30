@@ -1,6 +1,6 @@
-import logging
+from app.logger import get_logger
 
-from fastapi import FastAPI, Depends, BackgroundTasks, HTTPException
+from fastapi import FastAPI, BackgroundTasks
 from contextlib import asynccontextmanager
 from sqlalchemy import select
 
@@ -24,14 +24,18 @@ QUERY_SERVICE = QueryService(MODEL_PROVIDER_SERVICE, VECTOR_STORAGE_SERVICE)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    setup_db()
-
-    await VECTOR_STORAGE_SERVICE.setup_opensearch_index()
+    try:
+        setup_db()
+        await VECTOR_STORAGE_SERVICE.setup_opensearch_index()
+    except Exception as e:
+        import traceback
+        traceback.print_exc()
     yield
 
 
 app = FastAPI(lifespan=lifespan)
 
+logger = get_logger()
 
 @app.get('/')
 def root():
