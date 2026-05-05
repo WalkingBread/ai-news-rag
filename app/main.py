@@ -1,4 +1,4 @@
-from app.logger import get_logger
+from app.utils.logger import get_logger
 
 from fastapi import FastAPI, BackgroundTasks
 from contextlib import asynccontextmanager
@@ -11,6 +11,7 @@ from app.services.processdata import ProcessDataService
 from app.services.modelprovider import ModelProviderService
 from app.services.search import VectorStorageService
 from app.services.query import QueryService
+from app.services.summary import SummarizationService
 
 
 MODEL_PROVIDER_SERVICE = ModelProviderService()
@@ -18,6 +19,7 @@ VECTOR_STORAGE_SERVICE = VectorStorageService(MODEL_PROVIDER_SERVICE.embeddings)
 
 FETCH_DATA_SERVICE = FetchDataService()
 PROCESS_DATA_SERVICE = ProcessDataService()
+SUMMARIZATION_SERVICE = SummarizationService(MODEL_PROVIDER_SERVICE)
 
 QUERY_SERVICE = QueryService(MODEL_PROVIDER_SERVICE, VECTOR_STORAGE_SERVICE)
 
@@ -56,10 +58,15 @@ async def process(background_tasks: BackgroundTasks):
 
     return {'Data is being processed...'}
 
+@app.get('/summarize')
+async def summarize(background_tasks: BackgroundTasks):
+    background_tasks.add_task(SUMMARIZATION_SERVICE.summarize_sources)
+    return {'Summarization started...'}
+
 @app.get('/chunk')
 async def chunk(background_tasks: BackgroundTasks):
     background_tasks.add_task(VECTOR_STORAGE_SERVICE.process_sources)
-    return {'Chunking commenced...'}
+    return {'Chunking started...'}
 
 @app.get('/ask')
 async def ask():

@@ -1,8 +1,9 @@
 from datetime import datetime
-from sqlalchemy import func, ForeignKey, text
+from sqlalchemy import func, ForeignKey, text, Text
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column
+from sqlalchemy.dialects.postgresql import JSONB
 
-from typing import Optional
+from typing import Optional, List
 
 class Base(DeclarativeBase):
     pass
@@ -28,6 +29,8 @@ class ProcessedSource(Base):
     url: Mapped[str] = mapped_column(unique=True)
     title: Mapped[Optional[str]] = mapped_column(nullable=True)
     body: Mapped[Optional[str]] = mapped_column(nullable=True)
+    summary: Mapped[Optional[str]] = mapped_column(Text)
+    topics: Mapped[Optional[List[str]]] = mapped_column(JSONB)
     published_at: Mapped[Optional[datetime]] = mapped_column(nullable=True)
     created_at: Mapped[datetime] = mapped_column(server_default=func.now())
     vectorized: Mapped[bool] = mapped_column(server_default=text('false'), default=False)

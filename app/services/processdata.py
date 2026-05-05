@@ -1,6 +1,8 @@
 from app.database import get_db_session
 from app.database.models import RawSource, ProcessedSource
 
+from app.utils.text import remove_emojis
+
 from sqlalchemy import select
 
 import trafilatura
@@ -11,6 +13,8 @@ class ProcessDataService:
         pass
 
     def _clean_content(self, text: str) -> str:
+        text = remove_emojis(text)
+
         noise_patterns = [
             r'(Share this:|Follow us on|Click to copy).*',
             r'(Subscribe to our newsletter|Join our mailing list).*',

@@ -47,7 +47,9 @@ OPENSEARCH_INDEX_BODY = {
             },
             "text": { "type": "text" },
             "source_id": { "type": "keyword" },
-            "title": { "type": "text" }
+            "title": { "type": "text" },
+            "summary": { "type": "text" }, 
+            "topics": { "type": "keyword" }
         }
     }
 }
@@ -60,7 +62,7 @@ OS_HYBRID_SEARCH_PIPELINE_BODY = {
                 "normalization": {"technique": "min_max"},
                 "combination": {
                     "technique": "arithmetic_mean",
-                    "parameters": {"weights": [0.3, 0.7]} # 30% BM25, 70% Vector
+                    "parameters": {"weights": [0.3, 0.7]} # 30% BM25 70% Vector
                 }
             }
         }

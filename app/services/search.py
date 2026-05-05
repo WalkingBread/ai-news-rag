@@ -1,6 +1,6 @@
 from app.database.models import ProcessedSource
 from app.database import get_db_session
-from app.logger import get_logger
+from app.utils.logger import get_logger
 
 from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
@@ -78,12 +78,16 @@ class VectorStorageService:
         await self.pg_store.aadd_documents(docs)
 
     async def _index_source(self, source: ProcessedSource):
+        topics = source.topics if source.topics else []
+
         await self.os_store.aadd_texts(
             texts=[source.body],
             metadatas=[{
                 "source_id": source.id, 
                 "title": source.title,
-                "url": source.url
+                "url": source.url,
+                "summary": source.summary,
+                "topics": topics,
             }],
             ids=[str(source.id)]
         )

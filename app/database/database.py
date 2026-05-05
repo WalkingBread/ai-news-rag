@@ -3,7 +3,7 @@ from sqlalchemy import create_engine, text
 from sqlalchemy.orm import sessionmaker
 from contextlib import contextmanager
 
-from app.logger import get_logger
+from app.utils.logger import get_logger
 
 from app.database.config import (
     RAG_DB_URL,

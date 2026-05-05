@@ -7,7 +7,7 @@ import asyncio
 from abc import abstractmethod
 from app.database.models import RawSource
 from app.database import get_db_session
-from app.logger import get_logger
+from app.utils.logger import get_logger
 
 from datetime import datetime
 from typing import AsyncGenerator
