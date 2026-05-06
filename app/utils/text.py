@@ -1,4 +1,7 @@
 import re
+import hashlib
+
+from simhash import Simhash
 
 def remove_emojis(text: str) -> str:
     emoji_pattern = re.compile(
@@ -13,3 +16,14 @@ def remove_emojis(text: str) -> str:
     )
 
     return emoji_pattern.sub('', text)
+
+def _adjust_text_for_hashing(text: str) -> str:
+    return " ".join(text.lower().split())
+
+def hash(text: str):
+    return hashlib.sha256(
+        _adjust_text_for_hashing(text).encode()
+    ).hexdigest()
+
+def simhash(text: str):
+    return Simhash(_adjust_text_for_hashing(text)).value

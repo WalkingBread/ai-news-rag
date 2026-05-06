@@ -26,12 +26,8 @@ QUERY_SERVICE = QueryService(MODEL_PROVIDER_SERVICE, VECTOR_STORAGE_SERVICE)
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    try:
-        setup_db()
-        await VECTOR_STORAGE_SERVICE.setup_opensearch_index()
-    except Exception as e:
-        import traceback
-        traceback.print_exc()
+    setup_db()
+    VECTOR_STORAGE_SERVICE.setup_opensearch_index()
     yield
 
 

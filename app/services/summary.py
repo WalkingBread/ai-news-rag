@@ -1,7 +1,7 @@
 from app.services.modelprovider import ModelProviderService
 
 from app.database import get_db_session
-from app.database.models import ProcessedSource
+from app.database.models import RefinedSource
 
 from app.utils.token import get_token_count, truncate_to_tokens
 from app.utils.logger import get_logger
@@ -38,28 +38,27 @@ class SummarizationService:
 
     async def summarize_sources(self):
         with get_db_session() as db:
-            stmt = select(ProcessedSource).where(
-                (ProcessedSource.summary == None) | (ProcessedSource.topics == None)
+            stmt = select(RefinedSource).where(
+                (RefinedSource.summary == None) | (RefinedSource.topics == None)
             )
 
             sources = db.execute(stmt).scalars().all()
         
-        if not sources:
-            return
+            if not sources:
+                return
 
-        source_map = {s.id: s for s in sources}
-        for batch in self._get_document_batches(sources):
-            ids_str =  ", ".join(str(s[0]) for s in batch)
-            logger.info(f'Summarizing sources: {ids_str}')
-            response = await self._process_batch(batch)
-            
-            for item in response.items:
-                source = source_map.get(item.source_id)
-                with get_db_session() as db:
+            source_map = {s.id: s for s in sources}
+            for batch in self._get_document_batches(sources):
+                ids_str =  ", ".join(str(s[0]) for s in batch)
+                logger.info(f'Summarizing sources: {ids_str}')
+                response = await self._process_batch(batch)
+                
+                for item in response.items:
+                    source = source_map.get(item.source_id)
                     source.summary = item.summary
                     source.topics = item.topics
                     db.commit()
-                logger.info(f'Summarization completed for source: {source.id}')
+                    logger.info(f'Summarization completed for source: {source.id}')
 
 
     async def _process_batch(self, batch) -> SummarizationResponse:
@@ -83,7 +82,7 @@ class SummarizationService:
         })
             
         
-    def _get_document_batches(self, sources: List[ProcessedSource]):
+    def _get_document_batches(self, sources: List[RefinedSource]):
         current_batch = []
         used_tokens = 0
 

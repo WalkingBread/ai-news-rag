@@ -1,4 +1,4 @@
-from app.database.models import ProcessedSource
+from app.database.models import RefinedSource
 from app.database import get_db_session
 from app.utils.logger import get_logger
 
@@ -47,7 +47,7 @@ class VectorStorageService:
 
     async def process_sources(self):
         with get_db_session() as db:
-            stmt = select(ProcessedSource).where(ProcessedSource.vectorized == False)
+            stmt = select(RefinedSource).where(RefinedSource.vectorized == False)
             sources = db.execute(stmt).scalars().all()
 
             if not sources:
@@ -61,7 +61,7 @@ class VectorStorageService:
                 db.commit()
 
 
-    async def _chunk_source(self, source: ProcessedSource):
+    async def _chunk_source(self, source: RefinedSource):
         splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
             chunk_size=self.chunk_size, 
             chunk_overlap=self.chunk_overlap
@@ -77,7 +77,7 @@ class VectorStorageService:
 
         await self.pg_store.aadd_documents(docs)
 
-    async def _index_source(self, source: ProcessedSource):
+    async def _index_source(self, source: RefinedSource):
         topics = source.topics if source.topics else []
 
         await self.os_store.aadd_texts(
@@ -93,7 +93,7 @@ class VectorStorageService:
         )
 
 
-    async def setup_opensearch_index(self):
+    def setup_opensearch_index(self):
         self.os_store.client.search_pipeline.put(
             id=OS_HYBRID_SEARCH_PIPELINE, 
             body=OS_HYBRID_SEARCH_PIPELINE_BODY
@@ -101,7 +101,7 @@ class VectorStorageService:
 
         exists = self.os_store.client.indices.exists(index=OPENSEARCH_INDEX)
         if not exists:
-            await self.os_store.client.indices.create(
+            self.os_store.client.indices.create(
                 index=OPENSEARCH_INDEX,
                 body=OPENSEARCH_INDEX_BODY
             )
