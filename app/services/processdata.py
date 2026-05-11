@@ -15,6 +15,10 @@ import re
 
 SIMHASH_THRESHOLD = 3
 
+SOURCE_AUTHORITY = {
+    'Hugging Face': 1.0
+}
+
 class ProcessDataService:
     def __init__(self, simhash_threshold: int = SIMHASH_THRESHOLD):
         self.simhash_threshold = simhash_threshold
@@ -63,6 +67,7 @@ class ProcessDataService:
             title=remove_emojis(row.title),
             body=processed_body,
             published_at=row.published_at,
+            authority_score = self._calculate_authority(row.source),
             content_hash=hash(processed_body),
             simhash=simhash(processed_body)
         )
@@ -99,8 +104,13 @@ class ProcessDataService:
         
         return fuzzy_check is not None
         
+    def _calculate_authority(self, source_name: str):
+        return SOURCE_AUTHORITY.get(source_name, 1.0)
     
-    def _refine_source(self, row: ProcessedSource) -> RefinedSource:
+    def _calculate_momentum(self):
+        pass
+    
+    def _refine_source(self, row: ProcessedSource, momentum: float) -> RefinedSource:
         return RefinedSource(
             processed_source_id=row.id,
             source=row.source,
@@ -108,8 +118,8 @@ class ProcessDataService:
             title=row.title,
             body=row.body,
             published_at=row.published_at,
-            authority_score=1.0,
-            momentum_score=1.0
+            momentum_score=momentum,
+            authority_score=row.authority_score
         )
     
     def process(self):
@@ -117,14 +127,57 @@ class ProcessDataService:
             query = select(RawSource).outerjoin(ProcessedSource).where(ProcessedSource.id == None)
             rows = db.execute(query).scalars().all()
 
+        if not rows:
+            return
+
         for row in rows:
             with get_db_session() as db:
                 processed_source = self._process_source(row)
                 db.add(processed_source)
-                db.flush()
+                db.commit()
 
-                if not self._is_duplicate(processed_source, db):
-                    refined_source = self._refine_source(processed_source)
-                    db.add(refined_source)
+    def _get_cluster_ids(self, row: ProcessedSource, db: Session) -> list[int]:
+        fuzzy_stmt = text("""
+            SELECT id FROM source 
+            WHERE length(replace((simhash # :f_hash)::bit(64)::text, '0', '')) <= :limit
+        """).bindparams(bindparam("f_hash", type_=SignedInt64))
+        
+        results = db.execute(fuzzy_stmt, {
+            "f_hash": row.simhash, 
+            "limit": self.simhash_threshold
+        }).scalars().all()
 
+        return results
+
+    def refine(self):
+        with get_db_session() as db:
+            query = (
+                select(ProcessedSource)
+                .outerjoin(RefinedSource)
+                .where(RefinedSource.id == None)
+                .order_by(
+                    ProcessedSource.authority_score.desc(), 
+                    ProcessedSource.published_at.desc()
+                )
+            )
+            rows = db.execute(query).scalars().all()
+
+            if not rows:
+                return
+            
+            for row in rows:
+                cluster_ids = self._get_cluster_ids(row, db)
+
+                gold_stmt = select(RefinedSource.id).where(
+                    RefinedSource.processed_source_id.in_(cluster_ids)
+                )
+
+                if db.execute(gold_stmt).fetchone():
+                    continue
+                
+                momentum = self._calculate_momentum(len(cluster_ids), row.published_at)
+
+                refined_source = self._refine_source(row, momentum)
+                
+                db.add(refined_source)
                 db.commit()

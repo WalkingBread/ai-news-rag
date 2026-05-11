@@ -88,6 +88,9 @@ class VectorStorageService:
                 "url": source.url,
                 "summary": source.summary,
                 "topics": topics,
+                "authority_score": source.authority_score,
+                "momentum_score": source.momentum_score,
+                "published_at": source.published_at.isoformat()
             }],
             ids=[str(source.id)]
         )

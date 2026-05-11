@@ -1,7 +1,6 @@
 from sqlalchemy import BigInteger, TypeDecorator
 
 class SignedInt64(TypeDecorator):
-    """Converts Python's unsigned 64-bit ints to PostgreSQL's signed BIGINT."""
     impl = BigInteger
     cache_ok = True
 

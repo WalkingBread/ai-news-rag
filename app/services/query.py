@@ -1,6 +1,8 @@
 from app.services.modelprovider import ModelProviderService
 from app.services.search import VectorStorageService
 
+from app.settings import OS_SEARCH_PARAMS
+
 class QueryService:
     def __init__(self, model_provider: ModelProviderService, 
                  storage_service: VectorStorageService):
@@ -10,7 +12,8 @@ class QueryService:
     async def query(self, question: str) -> str:
         scout_results = await self.storage_service.os_store.asimilarity_search(
             question, 
-            k=2
+            k=3,
+            **OS_SEARCH_PARAMS
         )
         
         if not scout_results:

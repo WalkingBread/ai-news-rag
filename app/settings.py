@@ -49,7 +49,10 @@ OPENSEARCH_INDEX_BODY = {
             "source_id": { "type": "keyword" },
             "title": { "type": "text" },
             "summary": { "type": "text" }, 
-            "topics": { "type": "keyword" }
+            "topics": { "type": "keyword" },
+            "authority_score": { "type": "half_float" },
+            "momentum_score": { "type": "half_float" },
+            "published_at": { "type": "date" }
         }
     }
 }
@@ -67,4 +70,49 @@ OS_HYBRID_SEARCH_PIPELINE_BODY = {
             }
         }
     ]
+}
+
+OS_SEARCH_PARAMS = search_kwargs = {
+    "search_type": "script_scoring",
+    "space_type": "cosinesimil",
+    "pre_filter": {
+        "bool": {
+            "must": []
+        }
+    },
+    "search_params": {
+        "query": {
+            "function_score": {
+                "functions": [
+                    {
+                        "field_value_factor": {
+                            "field": "metadata.authority_score",
+                            "factor": 1.5,
+                            "missing": 1.0
+                        }
+                    },
+                    {
+                        "field_value_factor": {
+                            "field": "metadata.momentum_score",
+                            "modifier": "log1p",
+                            "factor": 1.2,
+                            "missing": 1.0
+                        }
+                    },
+                    {
+                        "gauss": {
+                            "metadata.published_at": {
+                                "origin": "now",
+                                "scale": "7d",
+                                "offset": "1d",
+                                "decay": 0.5
+                            }
+                        }
+                    }
+                ],
+                "score_mode": "multiply",
+                "boost_mode": "multiply"
+            }
+        }
+    }
 }
