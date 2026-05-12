@@ -72,7 +72,7 @@ OS_HYBRID_SEARCH_PIPELINE_BODY = {
     ]
 }
 
-OS_SEARCH_PARAMS = search_kwargs = {
+OS_SEARCH_PARAMS = {
     "search_type": "script_scoring",
     "space_type": "cosinesimil",
     "pre_filter": {
